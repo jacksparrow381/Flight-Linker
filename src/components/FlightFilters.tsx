@@ -10,32 +10,35 @@ import {
 } from "@mui/material";
 import { useMemo, useState } from "react";
 import { useGetAirportsQuery } from "../services/flights";
-import { Data } from "../types/types";
+import { Data, FlightsParams } from "../types/types";
 import { PassengerSelector } from "./PassengerSelector";
 import { ListFlights } from "./ListFlights";
+import { initialFilters } from "../constants/constants";
 
 export const FlightFilters = () => {
   const [query, setQuery] = useState("");
-  const [flightsParams, setFlightsParams] = useState({});
+  const [flightsParams, setFlightsParams] = useState<FlightsParams>({});
   const [loading, setLoading] = useState(false);
+  const [isAirportsLoading, setIsAirportsLoading] = useState(false);
   const [tripMode, setTripMode] = useState("round-trip");
-  const [filters, setFilters] = useState({
-    originSkyId: "",
-    destinationSkyId: "",
-    originEntityId: "",
-    destinationEntityId: "",
-    date: "",
-    returnDate: "",
-    cabinClass: "economy",
-  });
+  const [filters, setFilters] = useState(initialFilters);
 
-  const { data, isLoading } = useGetAirportsQuery(query);
+  const { data } = useGetAirportsQuery(query);
 
-  const handlechange = debounce((e) => {
+  const publishLoading = (loading: boolean) => {
+    setLoading(loading);
+  };
+
+  const publishAirportsLoading = (loading: boolean) => {
+    setIsAirportsLoading(loading);
+  }
+
+  const handleAirportSearchQueryChange = debounce((e) => {
+    publishAirportsLoading(true);
     setQuery(e.target.value);
   }, 500);
 
-  const handleFromSelection = (
+  const handleOriginSelection = (
     event: React.SyntheticEvent<Element, Event>,
     value: string | null
   ) => {
@@ -49,7 +52,7 @@ export const FlightFilters = () => {
     });
   };
 
-  const handleToSelection = (
+  const handleDestinationSelection = (
     event: React.SyntheticEvent<Element, Event>,
     value: string | null
   ) => {
@@ -81,10 +84,6 @@ export const FlightFilters = () => {
     });
   };
 
-  const publishLoading = (loading: boolean) => {
-    setLoading(loading);
-  };
-
   const handleSearch = () => {
     publishLoading(true);
     setFlightsParams(filters);
@@ -92,6 +91,7 @@ export const FlightFilters = () => {
 
   const options = useMemo(() => {
     if ((data?.data || []).length > 0) {
+      publishAirportsLoading(false);
       return data.data.map((item: Data) => item.navigation.localizedName);
     }
     return [];
@@ -122,34 +122,34 @@ export const FlightFilters = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Autocomplete
-            loading={options.length === 0 || isLoading}
+            loading={isAirportsLoading}
             options={options}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="From"
                 variant="outlined"
-                onChange={handlechange}
+                onChange={handleAirportSearchQueryChange}
                 value={query}
               />
             )}
-            onChange={handleFromSelection}
+            onChange={handleOriginSelection}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Autocomplete
-            loading={options.length === 0 || isLoading}
+            loading={isAirportsLoading}
             options={options}
             renderInput={(params) => (
               <TextField
                 {...params}
                 label="To"
                 variant="outlined"
-                onChange={handlechange}
+                onChange={handleAirportSearchQueryChange}
                 value={query}
               />
             )}
-            onChange={handleToSelection}
+            onChange={handleDestinationSelection}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
