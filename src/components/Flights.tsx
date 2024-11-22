@@ -15,10 +15,11 @@ export const Flights = () => {
         alt="Flight"
         style={{
           width: "100%",
-          height: "200px",
+          height: "300px",
           justifyContent: "center",
           display: "flex",
           borderRadius: "10px",
+          backgroundSize: "cover",
         }}
       />
       <Typography variant="h2" align="center">

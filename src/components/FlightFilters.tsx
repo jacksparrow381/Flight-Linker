@@ -1,14 +1,11 @@
 import {
   Autocomplete,
-  Box,
   Button,
   debounce,
   Grid,
   MenuItem,
   Select,
   SelectChangeEvent,
-  Tab,
-  Tabs,
   TextField,
 } from "@mui/material";
 import { useMemo, useState } from "react";
@@ -20,6 +17,8 @@ import { ListFlights } from "./ListFlights";
 export const FlightFilters = () => {
   const [query, setQuery] = useState("");
   const [flightsParams, setFlightsParams] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [tripMode, setTripMode] = useState("round-trip");
   const [filters, setFilters] = useState({
     originSkyId: "",
     destinationSkyId: "",
@@ -27,7 +26,7 @@ export const FlightFilters = () => {
     destinationEntityId: "",
     date: "",
     returnDate: "",
-    cabinClass: "",
+    cabinClass: "economy",
   });
 
   const { data, isLoading } = useGetAirportsQuery(query);
@@ -40,8 +39,6 @@ export const FlightFilters = () => {
     event: React.SyntheticEvent<Element, Event>,
     value: string | null
   ) => {
-    console.log("handleFromSelection", value);
-
     const selectedAirport = data.data.find(
       (item: Data) => item.navigation.localizedName === value
     );
@@ -56,8 +53,6 @@ export const FlightFilters = () => {
     event: React.SyntheticEvent<Element, Event>,
     value: string | null
   ) => {
-    console.log("handleToSelection", value);
-
     const selectedAirport = data.data.find(
       (item: Data) => item.navigation.localizedName === value
     );
@@ -68,7 +63,9 @@ export const FlightFilters = () => {
     });
   };
 
-  const handleTripMode = (e: SelectChangeEvent<string>) => {};
+  const handleTripMode = (e: SelectChangeEvent<string>) => {
+    setTripMode(e.target.value);
+  };
 
   const handleTripClass = (e: SelectChangeEvent<string>) => {
     setFilters({
@@ -77,7 +74,19 @@ export const FlightFilters = () => {
     });
   };
 
+  const publishPassengers = (passengers: Record<string, number>) => {
+    setFilters({
+      ...filters,
+      ...passengers,
+    });
+  };
+
+  const publishLoading = (loading: boolean) => {
+    setLoading(loading);
+  };
+
   const handleSearch = () => {
+    publishLoading(true);
     setFlightsParams(filters);
   };
 
@@ -88,29 +97,32 @@ export const FlightFilters = () => {
     return [];
   }, [data]);
 
-  console.log("filters", filters);
   return (
     <>
       <Grid container spacing={2} alignItems="center">
         <Grid item xs={12} sm={6} md={3}>
-          <Select fullWidth defaultValue="round-trip" onChange={handleTripMode}>
+          <Select fullWidth value={tripMode} onChange={handleTripMode}>
             <MenuItem value="round-trip">Round Trip</MenuItem>
             <MenuItem value="one-way">One Way</MenuItem>
           </Select>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <PassengerSelector />
+          <PassengerSelector publishPassengers={publishPassengers} />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
-          <Select fullWidth defaultValue="Economy" onChange={handleTripClass}>
-            <MenuItem value="Economy">Economy</MenuItem>
-            <MenuItem value="Business">Business</MenuItem>
-            <MenuItem value="First">First</MenuItem>
+          <Select
+            fullWidth
+            value={filters.cabinClass}
+            onChange={handleTripClass}
+          >
+            <MenuItem value="economy">Economy</MenuItem>
+            <MenuItem value="business">Business</MenuItem>
+            <MenuItem value="first">First</MenuItem>
           </Select>
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Autocomplete
-            loading={isLoading}
+            loading={options.length === 0 || isLoading}
             options={options}
             renderInput={(params) => (
               <TextField
@@ -126,7 +138,7 @@ export const FlightFilters = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <Autocomplete
-            loading={isLoading}
+            loading={options.length === 0 || isLoading}
             options={options}
             renderInput={(params) => (
               <TextField
@@ -158,37 +170,37 @@ export const FlightFilters = () => {
             }
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <TextField
-            fullWidth
-            label="Return Date"
-            variant="outlined"
-            type="date"
-            onChange={(e) =>
-              setFilters({
-                ...filters,
-                returnDate: new Date(e.target.value)
-                  .toISOString()
-                  .split("T")[0]
-                  .trim(),
-              })
-            }
-            InputLabelProps={{ shrink: true }}
-          />
-        </Grid>
+        {tripMode === "round-trip" && (
+          <Grid item xs={12} sm={6} md={3}>
+            <TextField
+              fullWidth
+              label="Return Date"
+              variant="outlined"
+              type="date"
+              InputLabelProps={{ shrink: true }}
+              onChange={(e) =>
+                setFilters({
+                  ...filters,
+                  returnDate: new Date(e.target.value)
+                    .toISOString()
+                    .split("T")[0]
+                    .trim(),
+                })
+              }
+            />
+          </Grid>
+        )}
         <Grid item xs={12} sm={6} md={3}>
           <Button variant="contained" fullWidth onClick={handleSearch}>
             Search
           </Button>
         </Grid>
       </Grid>
-      <Box p={2}>
-        <Tabs value={0}>
-          <Tab label="Best" />
-          <Tab label="Cheapest" />
-        </Tabs>
-      </Box>
-      <ListFlights flightParams={flightsParams} />
+      <ListFlights
+        flightParams={flightsParams}
+        loading={loading}
+        publishLoading={publishLoading}
+      />
     </>
   );
 };

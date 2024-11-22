@@ -1,41 +1,68 @@
-import { Box, Card, Grid, Typography } from "@mui/material";
+import { Box, Card, CircularProgress, Grid, Typography } from "@mui/material";
 import { useGetFlightsQuery } from "../services/flights";
 import { Data } from "../types/types";
+import { useMemo } from "react";
+import { getFormattedFlights } from "../utils/helpers";
 
 type Props = {
   flightParams: Data;
+  publishLoading: (loading: boolean) => void;
+  loading: boolean;
 };
 
-export const ListFlights = ({ flightParams }: Props) => {
-  const { data, error, isLoading } = useGetFlightsQuery(flightParams);
+export const ListFlights = ({
+  flightParams,
+  publishLoading,
+  loading,
+}: Props) => {
+  const { data = {} } = useGetFlightsQuery(flightParams);
 
-  console.log("flightData", data, error, isLoading);
+  const flights = useMemo(() => {
+    publishLoading(false);
+    if (data) {
+      return getFormattedFlights(data?.data?.itineraries);
+    }
+    return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   return (
-    <Box p={2}>
-      <Card
-        variant="outlined"
-        sx={{
-          padding: "10px",
-        }}
-      >
+    <>
+      {loading ? (
+        <CircularProgress
+          size={50}
+          sx={{ display: "block", margin: "auto", marginTop: 5 }}
+        />
+      ) : (
         <Box p={2}>
-          <Grid container alignItems="center">
-            <Grid item xs={12}>
-              <Typography variant="body1">Saudia</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body1">4:50 PM - 10:00 AM</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body1">17 hr 10 min (1 stop)</Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography variant="body1">PKR 520,670</Typography>
-            </Grid>
-          </Grid>
+          {flights?.map((flight, index) => (
+            <Card key={index} sx={{ p: 2, mb: 2 }}>
+              <Grid container>
+                <Grid item xs={4}>
+                  Origin:
+                  <Typography variant="h6">{flight.departure}</Typography>
+                  <Typography variant="body1">{flight.origin}</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  Destination
+                  <Typography variant="h6">{flight.arrival}</Typography>
+                  <Typography variant="body1">{flight.destination}</Typography>
+                </Grid>
+                <Grid item xs={4}>
+                  Info:
+                  <Typography variant="h6">{flight.price}</Typography>
+                  <Typography variant="body1">
+                    {flight.duration}{" "}
+                    {flight.stops > 1
+                      ? `(${flight.stops} stops)`
+                      : `(${flight.stops} stop)`}
+                  </Typography>
+                </Grid>
+              </Grid>
+            </Card>
+          ))}
         </Box>
-      </Card>
-    </Box>
+      )}
+    </>
   );
 };

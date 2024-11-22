@@ -12,13 +12,16 @@ import RemoveIcon from "@mui/icons-material/Remove";
 import { PASSENGERS } from "../constants/constants";
 import { PassengerType } from "../types/types";
 
-export const PassengerSelector = () => {
+type Props = {
+  publishPassengers: (passengers: Record<PassengerType, number>) => void;
+};
+
+export const PassengerSelector = ({ publishPassengers }: Props) => {
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [passengers, setPassengers] = useState<Record<PassengerType, number>>({
     adults: 1,
     children: 0,
-    infantsSeat: 0,
-    infantsLap: 0,
+    infants: 0,
   });
 
   const open = Boolean(anchorEl);
@@ -30,21 +33,29 @@ export const PassengerSelector = () => {
   };
 
   const handleIncrement = (type: PassengerType) => {
+    const updatedPassengers = {
+      ...passengers,
+      [type]: passengers[type] + 1,
+    };
+
     setPassengers((prev) => ({ ...prev, [type]: prev[type] + 1 }));
+    publishPassengers(updatedPassengers);
   };
 
   const handleDecrement = (type: PassengerType) => {
+    const updatedPassengers = {
+      ...passengers,
+      [type]: Math.max(0, passengers[type] - 1),
+    };
     setPassengers((prev) => ({
       ...prev,
       [type]: Math.max(0, prev[type] - 1), // Ensure no negative values
     }));
+    publishPassengers(updatedPassengers);
   };
 
   const totalPassengers =
-    passengers.adults +
-    passengers.children +
-    passengers.infantsSeat +
-    passengers.infantsLap;
+    passengers.adults + passengers.children + passengers.infants;
 
   return (
     <>

@@ -1,4 +1,4 @@
-import flight from './flight.jpeg';
+import flight from './flight.jpg';
 
 
 export { flight };
